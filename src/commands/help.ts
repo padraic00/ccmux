@@ -22,6 +22,11 @@ type HelpEntry = {
 /** Public command surface (hidden internals `_run`/`_restart-worker` are intentionally omitted). */
 export const COMMANDS: HelpEntry[] = [
   {
+    verb: 'channel-consent',
+    args: '<name> <approve|revoke|status>',
+    desc: 'authorize exact local development-channel launch inputs for unattended recovery',
+  },
+  {
     verb: 'control',
     args: '<sessions|session|message|start|interrupt|wait|watch> [--help]',
     desc: 'typed local daemon API; watch streams bounded snapshots, commands require exact session identity',

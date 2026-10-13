@@ -19,6 +19,7 @@ export type PromptKind =
   | 'folder-trust'
   | 'declared-permissions'
   | 'external-imports'
+  | 'development-channels'
   | 'unrecognised';
 
 export type PanePrompt = {
@@ -64,6 +65,12 @@ export function atInteractiveMenu(paneText: string): boolean {
 export function detectPrompt(paneText: string): PanePrompt | null {
   if (!atInteractiveMenu(paneText)) return null;
   const tail = paneTail(paneText, 40);
+  if (
+    (/WARNING:\W*Loading\W+development channels/.test(tail) ||
+      tail.includes('--dangerously-load-development-channels is for local channel development')) &&
+    tail.includes('Channels:')
+  )
+    return { kind: 'development-channels', title: 'approve development channels' };
   if (tail.includes(PICKER_SUMMARY) && tail.includes(PICKER_FULL)) {
     return { kind: 'resume-picker', title: 'resume: summary or full' };
   }
@@ -82,13 +89,15 @@ export function terminalMenu(paneText: string) {
   const prompt = detectPrompt(paneText);
   if (!prompt) return null;
   const labels =
-    prompt.kind === 'resume-picker'
-      ? [PICKER_SUMMARY, PICKER_FULL]
-      : prompt.kind === 'external-imports'
-        ? ['No, disable external imports', 'Yes, allow']
-        : prompt.kind === 'folder-trust' || prompt.kind === 'declared-permissions'
-          ? ['No, exit', 'Yes, I trust this folder']
-          : [];
+    prompt.kind === 'development-channels'
+      ? ['I am using this for local development', 'Exit']
+      : prompt.kind === 'resume-picker'
+        ? [PICKER_SUMMARY, PICKER_FULL]
+        : prompt.kind === 'external-imports'
+          ? ['No, disable external imports', 'Yes, allow']
+          : prompt.kind === 'folder-trust' || prompt.kind === 'declared-permissions'
+            ? ['No, exit', 'Yes, I trust this folder']
+            : [];
   const options: { id: string; label: string }[] = [];
   let selected: number | null = null;
   for (const line of paneTail(paneText, 40).split('\n')) {
