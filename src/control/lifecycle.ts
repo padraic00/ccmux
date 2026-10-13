@@ -1,6 +1,7 @@
 import { dirname } from 'node:path';
 import { AppError } from 'stitchkit';
 import type { z } from 'zod';
+import { claudeChannelFlags } from '../agent/claude/channelLaunch.ts';
 import { validateClaudeSelection } from '../agent/claude/native/catalog.ts';
 import { customModel, prepareCustomHost } from '../agent/custom/host.ts';
 import { stableJson } from '../agent/launch/launchInputs.ts';
@@ -54,6 +55,11 @@ export async function createControlSession(
   // The execution mode this create will actually use, resolved once so the capability checks below
   // ask about the session that will exist rather than about the agent family in general.
   const mode = resolveRuntimeMode(runtime, input.mode);
+  if (input.claudeChannel !== undefined && (runtime !== 'claude' || mode !== 'tui'))
+    throw new AppError('UNSUPPORTED', {
+      message: 'Channels require interactive Claude',
+      status: 409,
+    });
   if (runtime !== 'codex' && runtime !== 'custom' && input.launchRecipe !== undefined)
     throw new AppError('UNSUPPORTED', {
       message: 'This runtime does not accept a Codex launch recipe',
@@ -117,6 +123,7 @@ export async function createControlSession(
     workspace,
     flags: [
       ...resolved.flags,
+      ...(input.claudeChannel === undefined ? [] : claudeChannelFlags(input.claudeChannel)),
       ...(runtime === 'codex' ? modelSelectionFlags(input.modelSelection) : []),
     ],
     ...(runtime === 'codex' ? {} : { runtime }),

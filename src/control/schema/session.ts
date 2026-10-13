@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { ClaudeChannelLaunchSchema } from '../../agent/claude/channelLaunch.ts';
 import { AgentKindSchema, ManagedPeerSchema, SESSION_NAME_RE } from '../../chat/identitySchema.ts';
 import {
   LaunchRecipeMetadataSchema,
@@ -27,6 +28,7 @@ export const ControlCreateSchema = z
     name: z.string().min(1).max(256).regex(SESSION_NAME_RE),
     workspace: z.string().startsWith('/').max(4_096),
     flags: z.array(z.string().max(4_096)).max(32).default([]),
+    claudeChannel: ClaudeChannelLaunchSchema.optional(),
     launchRecipe: LaunchRecipeReferenceSchema.optional(),
     modelSelection: ModelSelectionSchema.optional(),
     applicationPolicy: ApplicationPolicyReferenceSchema.optional(),
