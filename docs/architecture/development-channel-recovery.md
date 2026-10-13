@@ -27,3 +27,26 @@ Confirmation is not channel readiness. Integrators must check the channel health
 acknowledgment/reply probe before advertising that a coordinator can accept requests. Revocation
 stops future automatic confirmations; it does not disconnect a channel already running. Stop or
 restart the session when immediate disconnection is required.
+
+## Typed control-plane creation
+
+`session.create` accepts `claudeChannel` only for interactive Claude sessions:
+
+```
+{
+  "runtime": "claude",
+  "mode": "tui",
+  "claudeChannel": {
+    "mcpConfig": "/absolute/path/to/mcp.json",
+    "servers": ["local"],
+    "promptFile": "/absolute/path/to/coordinator.md"
+  }
+}
+```
+
+The caller also supplies the normal request ID, session name and workspace. This field derives the
+channel startup arguments, manual tool permissions and preallowed acknowledge/reply tools. It does
+not authorize startup confirmation: `channel-consent approve` remains an explicit owner action.
+Raw caller flags are still refused for Claude. Native SDK mode and other providers refuse this
+field. Derived arguments participate in the create fingerprint, so a changed configuration cannot
+silently reuse an earlier create request.
