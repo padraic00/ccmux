@@ -132,7 +132,14 @@ export interface AgentProvider {
   // answer so far and the current visible screen, say what the supervisor may do next: wait, press
   // ONE key, or stop. Pure: state + text + config → step. The caller captures, presses and waits for
   // the key to render. Optional: agents without such menus omit it.
-  settleMenu?(state: MenuSettleState, paneText: string, m: MachineConfig): MenuSettleStep;
+  // `consentedChannel` returns the option number to press on a development-channels warning the
+  // session has recorded consent for, or null.
+  settleMenu?(
+    state: MenuSettleState,
+    paneText: string,
+    m: MachineConfig,
+    consentedChannel?: (frame: string) => string | null,
+  ): MenuSettleStep;
   // Inter-agent chat is a structured provider-owned pane verdict. A bool cannot distinguish a
   // blocking menu from a running turn, an occupied composer or a half-painted/unknown frame; those
   // states have different wait semantics and different hold explanations. Styled capture is kept so
