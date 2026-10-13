@@ -73,6 +73,7 @@ export function settleMenu(
   state: MenuSettleState,
   paneText: string,
   m: MachineConfig,
+  consentedChannel?: (frame: string) => string | null,
 ): MenuSettleStep {
   // Only the frame at the bottom of the screen is the question being asked; a frame drawn over, or
   // one with something beneath it, is not one to press keys into.
@@ -117,6 +118,20 @@ export function settleMenu(
 
   // Answered with Enter and the same menu is still up: by now it may be a live composer.
   if (!armed) return stop(state, 'the menu answered a moment ago is still up');
+  // The development-channels warning is answered only with the session's recorded consent for
+  // exactly the channels shown (channelConsent.ts); the caller supplies that check.
+  if (menu.kind === 'development-channels') {
+    const number = consentedChannel?.(shown) ?? null;
+    if (number === null) return wait(armed, state);
+    return {
+      state: {
+        armed,
+        answered: state.answered,
+        pending: { kind: 'number', menu: menu.kind, number },
+      },
+      action: { act: 'press', key: number },
+    };
+  }
   if (!policyAnswers(menu.kind, m)) return wait(armed, state);
 
   if (menu.kind === 'folder-trust' || menu.kind === 'declared-permissions') {

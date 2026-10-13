@@ -1,4 +1,5 @@
 import { existsSync } from 'node:fs';
+import { developmentChannelAnswer } from '../agent/claude/channelConsent.ts';
 import { codexHistoryPresent } from '../agent/codex/resume.ts';
 import { type AgentProvider, providerFor } from '../agent/index.ts';
 import { grantIdentity } from '../agent/launch/identityEnv.ts';
@@ -84,7 +85,9 @@ export async function settlePrompts(
     if (gone.aborted) return;
     let step: MenuSettleStep;
     try {
-      step = settle(state, await capturePaneScreen(m, s.name), m);
+      step = settle(state, await capturePaneScreen(m, s.name), m, (frame) =>
+        developmentChannelAnswer(frame, s),
+      );
     } catch {
       continue; // pane not capturable yet (still spawning) — retry
     }

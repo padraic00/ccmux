@@ -123,6 +123,8 @@ async function dispatch(verb: string | undefined, rest: string[]): Promise<numbe
         flags.positionals[1],
       );
     }
+    case 'channel-consent':
+      return (await import('./commands/channelConsent.ts')).cmdChannelConsent(rest);
     case 'env-file':
       return (await import('./commands/envFile.ts')).cmdEnvFile(rest);
     case 'dir':
