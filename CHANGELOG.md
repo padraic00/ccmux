@@ -16,6 +16,10 @@ the GitHub Release with that section as the notes.
 
 ## [Unreleased]
 
+- Channel sessions created with `claudeChannel` run in the session's or the machine's permission mode instead of being pinned to `manual`.
+- `ccmux mode` takes effect on sessions that stored a `--permission-mode` flag: it removes that flag, prints what it removed, and names `ccmux channel-consent <name> approve` when the session's channel consent must be re-approved. The launcher ignores a stored `--permission-mode`, so the mode it resolves is the one the session gets.
+- `list --json` reports `permissionMode`, the mode a Claude terminal session launches with.
+
 ## [0.84.7] — 2026-10-24
 
 - Block a session whose working directory is missing or invalid before launching its provider, and keep its conversation identity for an explicit repair.

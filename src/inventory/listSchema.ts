@@ -83,6 +83,11 @@ export const ListItemSchema = z.object({
   /** What this session is FOR, when it declares it. Null is an ordinary state, not missing data —
    *  such a session is addressed by name, as it always was. */
   role: z.string().nullable().default(null),
+  /** The permission mode this session's launch passes to Claude: its override, else the machine
+   *  default, after the root guard. A session already running keeps the mode it started with until
+   *  restarted (`stale` names `mode` then). Null for sessions whose runtime is not the Claude
+   *  terminal, and from a peer too old to report it. */
+  permissionMode: z.string().nullable().default(null),
   /**
    * When the turn that is running RIGHT NOW began, or null.
    *
