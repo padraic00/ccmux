@@ -19,9 +19,9 @@ export const ClaudeChannelLaunchSchema = z
   .strict();
 
 export function claudeChannelFlags(value: z.infer<typeof ClaudeChannelLaunchSchema>): string[] {
+  // No `--permission-mode`: a channel session takes its mode like any other session, from its
+  // override or the machine default.
   return [
-    '--permission-mode',
-    'manual',
     ...(value.promptFile ? ['--append-system-prompt-file', value.promptFile] : []),
     '--mcp-config',
     value.mcpConfig,

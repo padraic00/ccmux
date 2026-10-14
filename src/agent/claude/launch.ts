@@ -15,6 +15,7 @@ import {
 } from '../launch/launchInputs.ts';
 import { providerLaunchEnv } from '../launch/sessionEnv.ts';
 import { buildPrompt } from '../prompt/managePrompt.ts';
+import { withoutPermissionModeFlag } from './permissionFlag.ts';
 import { claudeProfile } from './profileRoot.ts';
 
 export function preflight(m: MachineConfig): void {
@@ -33,19 +34,17 @@ export function buildArgv(
   historyPresent: boolean,
 ): string[] {
   const resume = historyPresent ? ['--resume', s.uuid] : ['--session-id', s.uuid];
-  const flags = UID === 0 && !m.allowEscalatedUnderRoot ? stripDangerous(s.flags) : s.flags; // same rule, other route
+  // The resolved mode below is the only `--permission-mode` on the argv: a stored or fleet copy would
+  // come later and win, overriding both `ccmux mode` and the root guard.
+  const own = withoutPermissionModeFlag(s.flags);
+  const flags = UID === 0 && !m.allowEscalatedUnderRoot ? stripDangerous(own) : own; // same rule, other route
   return [
     m.claudeBin,
     ...resume,
     '-n',
     rcName(m, s.name),
     '--permission-mode',
-    // per-session override wins over the machine default; undefined → machine default.
-    resolvePermissionMode(
-      s.permissionMode ?? m.permissionMode,
-      UID === 0,
-      m.allowEscalatedUnderRoot,
-    ),
+    launchPermissionMode(s, m),
     '--append-system-prompt',
     buildPrompt(
       s.name,
@@ -59,8 +58,22 @@ export function buildArgv(
     ),
     ...settingsArg(m, s, cli),
     ...flags,
-    ...m.extraFlags,
+    ...withoutPermissionModeFlag(m.extraFlags),
   ];
+}
+
+/** The mode a launch passes: the per-session override, else the machine default, after the root
+ *  guard. */
+export function launchPermissionMode(
+  s: Pick<Session, 'permissionMode'>,
+  m: MachineConfig,
+  isRoot: boolean = UID === 0,
+): string {
+  return resolvePermissionMode(
+    s.permissionMode ?? m.permissionMode,
+    isRoot,
+    m.allowEscalatedUnderRoot,
+  );
 }
 
 /**

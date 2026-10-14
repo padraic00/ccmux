@@ -1,7 +1,11 @@
+import { existsSync } from 'node:fs';
+import { consentPath } from '../agent/claude/channelConsent.ts';
 import { escalationRefusal } from '../agent/claude/launch.ts';
+import { withoutPermissionModeFlag } from '../agent/claude/permissionFlag.ts';
 import { PermissionModeSchema } from '../config/launchSchema.ts';
 import { forwardIfRemote } from '../fleet/forward.ts';
 import { setSessionPermissionMode } from '../session/registry.ts';
+import type { Session } from '../types.ts';
 import { UID } from '../util/env.ts';
 import { log } from '../util/log.ts';
 
@@ -11,7 +15,8 @@ const CHOICES = PermissionModeSchema.options.join('|');
  * Set (or clear) a session's per-session permission-mode override.
  *   ccmux mode <name> <auto|plan|acceptEdits|bypassPermissions|dontAsk|manual>
  *   ccmux mode <name> default   → clear the override (inherit the machine default)
- * The mode is a launch-time flag, so it applies on the next `ccmux restart <name>`.
+ * The mode is a launch-time flag, so it applies on the next `ccmux restart <name>`. A stored
+ * `--permission-mode` among the session's flags is removed in the same update and reported.
  */
 export async function cmdMode(name: string | undefined, mode: string | undefined): Promise<number> {
   if (name === undefined || mode === undefined) {
@@ -42,13 +47,35 @@ export async function cmdMode(name: string | undefined, mode: string | undefined
     console.log(refusal);
     return 1;
   }
-  const ok = await setSessionPermissionMode(m, name, value);
-  if (!ok) {
+  const before = await setSessionPermissionMode(m, name, value);
+  if (before === null) {
     console.log(`no such session: ${name}`);
     return 1;
   }
-  log.info({ msg: 'session permission mode set', name, mode: value ?? null });
+  const removed = droppedFlags(before);
+  log.info({ msg: 'session permission mode set', name, mode: value ?? null, removed });
   console.log(`${name}: permission mode → ${value ?? `default (${m.permissionMode})`}`);
+  if (removed.length > 0) {
+    console.log(`removed stored flag: ${removed.join(' ')}`);
+    // The consent digest covers the session's flags, so the approval no longer matches them.
+    if (existsSync(consentPath(before)))
+      console.log(
+        `channel consent no longer matches the launch flags; re-approve before restart: ccmux channel-consent ${name} approve`,
+      );
+  }
   console.log(`apply: ccmux restart ${name}   (mode is set at launch)`);
   return 0;
+}
+
+/** The stored flags the update removed, in their original order. */
+function droppedFlags(before: Session): string[] {
+  if (before.agent !== 'claude') return [];
+  const kept = withoutPermissionModeFlag(before.flags);
+  const removed: string[] = [];
+  let k = 0;
+  for (const flag of before.flags) {
+    if (k < kept.length && kept[k] === flag) k++;
+    else removed.push(flag);
+  }
+  return removed;
 }

@@ -14,9 +14,10 @@ const channel = {
   servers: ['local'],
   promptFile: '/config/coordinator.md',
 };
-test('typed channel launch permits only manual permissions and channel reply tools', () => {
+test('typed channel launch leaves the permission mode to the session and allows reply tools', () => {
   const flags = claudeChannelFlags(ClaudeChannelLaunchSchema.parse(channel));
-  expect(flags).toContain('manual');
+  expect(flags.some((f) => f.startsWith('--permission-mode'))).toBe(false);
+  expect(flags).not.toContain('manual');
   expect(flags).toContain('server:local');
   expect(flags).toContain('mcp__local__reply');
   expect(

@@ -1,3 +1,4 @@
+import { withoutPermissionModeFlag } from '../agent/claude/permissionFlag.ts';
 import { sessionsPath } from '../config/paths.ts';
 import type { MachineConfig, PermissionMode, Session } from '../types.ts';
 import { loadPendingRows } from './pendingStore.ts';
@@ -84,14 +85,22 @@ function withField<K extends keyof Session>(
 }
 
 /** Set (or clear) a session's per-session permission-mode override. `mode === undefined`
- *  clears it → the session falls back to the machine default. Returns false if the name
- *  wasn't present. Takes effect on the next (re)start — the mode is a launch-time flag. */
+ *  clears it → the session falls back to the machine default. A Claude session's stored
+ *  `--permission-mode` flag is removed in the same update, so the override is the one setting.
+ *  Returns the row as it was before the change, or null if the name wasn't present. Takes effect
+ *  on the next (re)start — the mode is a launch-time flag. */
 export async function setSessionPermissionMode(
   m: MachineConfig,
   name: string,
   mode: PermissionMode | undefined,
-): Promise<boolean> {
-  return updateSession(m, name, (s) => withField(s, 'permissionMode', mode));
+): Promise<Session | null> {
+  let before: Session | null = null;
+  const found = await updateSession(m, name, (s) => {
+    before = s;
+    const next = withField(s, 'permissionMode', mode);
+    return s.agent === 'claude' ? { ...next, flags: withoutPermissionModeFlag(s.flags) } : next;
+  });
+  return found ? before : null;
 }
 
 /**

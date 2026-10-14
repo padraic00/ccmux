@@ -45,8 +45,17 @@ restart the session when immediate disconnection is required.
 ```
 
 The caller also supplies the normal request ID, session name and workspace. This field derives the
-channel startup arguments, manual tool permissions and preallowed acknowledge/reply tools. It does
+channel startup arguments and preallowed acknowledge/reply tools. It does
 not authorize startup confirmation: `channel-consent approve` remains an explicit owner action.
+
+The derived arguments carry no permission mode. A channel session runs in its per-session override
+or the machine default (normally `auto`), like any other session. Earlier sessions stored
+`--permission-mode manual` among their flags, and that copy overrode both. The launcher now drops
+any stored `--permission-mode` (pair or `=` form), so the resolved mode is the only one on the argv.
+`ccmux mode <name> <mode|default>` removes a stored copy from the session's flags and says so.
+Consent hashes those flags, so when such a session had consent, `mode` prints the
+`ccmux channel-consent <name> approve` step to run before restart. Consent is never re-approved
+automatically.
 Raw caller flags are still refused for Claude. Native SDK mode and other providers refuse this
 field. Derived arguments participate in the create fingerprint, so a changed configuration cannot
 silently reuse an earlier create request.
