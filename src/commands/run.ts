@@ -1,4 +1,5 @@
 import { existsSync } from 'node:fs';
+import { developmentChannelAnswer } from '../agent/claude/channelConsent.ts';
 import { type AgentProvider, providerFor } from '../agent/index.ts';
 import { computeStamp } from '../agent/launch/launchStamp.ts';
 import { droppedDeadAgentKeys, withoutDeadAgentEnv } from '../agent/launch/sshEnv.ts';
@@ -87,7 +88,9 @@ async function settlePrompts(m: MachineConfig, s: Session, provider: AgentProvid
     await Bun.sleep(PICKER_POLL_MS);
     let key: string | null = null;
     try {
-      key = answer(await capturePane(m, s.name, 40), m);
+      const text = await capturePane(m, s.name, 40);
+      key = developmentChannelAnswer(text, s) ?? answer(text, m);
+      if (key && text !== (await capturePane(m, s.name, 40))) continue;
     } catch {
       continue; // pane not capturable yet (still spawning) — retry
     }
@@ -99,7 +102,8 @@ async function settlePrompts(m: MachineConfig, s: Session, provider: AgentProvid
     await Bun.sleep(500); // let the menu register the selection
     let stillUp = false;
     try {
-      stillUp = answer(await capturePane(m, s.name, 40), m) !== null;
+      const text = await capturePane(m, s.name, 40);
+      stillUp = (developmentChannelAnswer(text, s) ?? answer(text, m)) !== null;
     } catch {
       stillUp = false;
     }

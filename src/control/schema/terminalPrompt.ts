@@ -8,6 +8,7 @@ export const TerminalMenuSchema = z
       'declared-permissions',
       'resume-picker',
       'external-imports',
+      'development-channels',
       'unrecognised',
     ]),
     title: z.string().max(256),
