@@ -10,6 +10,17 @@ the GitHub Release with that section as the notes.
 - `ccmux mode` takes effect on sessions that stored a `--permission-mode` flag: it removes that flag, prints what it removed, and names `ccmux channel-consent <name> approve` when the session's channel consent must be re-approved. The launcher ignores a stored `--permission-mode`, so the mode it resolves is the one the session gets.
 - `list --json` reports `permissionMode`, the mode a Claude terminal session launches with.
 
+## [0.80.5] — 2026-10-09
+
+- Metadata catalog processes and their group descendants terminate after abrupt owner death, including SIGKILL, through Stitchkit's native owner-loss guard.
+
+## [0.80.4] — 2026-10-09
+
+Explain exact remote Codex App thread resolution failures
+
+- Remote App thread resolution now reports the failure phase, kind, provider reason and RPC code, with secrets masked.
+- Both peers validate one typed result and the exact machine/thread identity before message admission; malformed or inconsistent responses fail without creating a message.
+
 ## [0.80.3] — 2026-10-07
 
 All dependencies at latest and a journaled release path
