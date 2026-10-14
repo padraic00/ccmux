@@ -1,4 +1,5 @@
 import { existsSync } from 'node:fs';
+import { launchPermissionMode } from '../agent/claude/launch.ts';
 import type { PaneScan } from '../agent/index.ts';
 import {
   lastActivityMs,
@@ -339,6 +340,10 @@ export function toListItem(m: MachineConfig, r: ListRow): ListItem {
     stale: r.stale,
     staleUnknown: r.staleUnknown,
     role: r.session.role ?? null,
+    permissionMode:
+      r.session.agent === 'claude' && !hasNativeRuntime(r.session)
+        ? launchPermissionMode(r.session, m)
+        : null,
     turnStartedAt: r.turnStartedAt,
     envFile: envFileEntry(r.session),
     createdAt: r.createdAt,

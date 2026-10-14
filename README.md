@@ -351,6 +351,12 @@ Two levels — a machine default plus an optional per-session override:
   `default` clears the override → the session inherits the machine default again. The mode is a
   launch-time flag, so **`ccmux restart <name>` applies it** (a running session keeps whatever it
   started with — you can't switch into `bypassPermissions` at runtime).
+- **One setting, one place.** The launcher passes the resolved mode and drops any
+  `--permission-mode` stored among a session's flags, so a stored copy can no longer override it.
+  `ccmux mode` also removes such a copy from the session's flags and prints that it did; when the
+  session has development-channel consent, which covers its flags, it names the
+  `ccmux channel-consent <name> approve` step to run before restart. `list --json` reports each
+  Claude terminal session's launch mode as `permissionMode`.
 - **Under a root daemon, escalated modes need the machine to declare itself.** They are blocked
   twice: ccmux downgrades them, and the agent independently refuses to start as root
   (*"--dangerously-skip-permissions cannot be used with root/sudo privileges"*). Undeclared,
