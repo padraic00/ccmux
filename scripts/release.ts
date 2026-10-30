@@ -53,8 +53,19 @@ function sha256(path: string): { bytes: number; hex: string } {
   return { bytes: buf.length, hex: new Bun.CryptoHasher('sha256').update(buf).digest('hex') };
 }
 
-/** The key id the CI secret `CCMUX_RELEASE_SIGNING_KEY` belongs to — see `src/release/trust.ts`. */
-const SIGNING_KEY_ID = 'ccmux-2026-09';
+/** The key id the CI secret `CCMUX_RELEASE_SIGNING_KEY` belongs to — see `src/release/trust.ts`.
+ *  A fork that publishes its own releases names its key in `CCMUX_RELEASE_SIGNING_KEY_ID` and gives
+ *  the public half in `CCMUX_RELEASE_SIGNING_PUBLIC_KEY`; its machines trust that key through
+ *  `releaseTrustKeys` in `machine.json`. */
+const SIGNING_KEY_ID = process.env.CCMUX_RELEASE_SIGNING_KEY_ID || 'ccmux-2026-09';
+
+/** The keys the self-check below accepts. A fork key is added only under an id the compiled set
+ *  does not already use, so it can never stand in for the compiled key. */
+function signingTrust(): Readonly<Record<string, string>> {
+  const forkKey = process.env.CCMUX_RELEASE_SIGNING_PUBLIC_KEY;
+  if (!forkKey || SIGNING_KEY_ID in RELEASE_KEYS) return RELEASE_KEYS;
+  return { ...RELEASE_KEYS, [SIGNING_KEY_ID]: forkKey };
+}
 
 /** `release.json` for the bundle just built: a signed build manifest, plus the flat fields earlier
  *  ccmux and the install script read (`src/release/document.ts`). Unsigned only when no key is
@@ -82,9 +93,13 @@ async function writeManifest(
   if (signingKey !== undefined) {
     const manifest = CliBuildManifestSchema.parse(document);
     if (
-      !cliSignatureAccepted(verifyCliManifest(manifest, manifest.signature, { keys: RELEASE_KEYS }))
+      !cliSignatureAccepted(
+        verifyCliManifest(manifest, manifest.signature, { keys: signingTrust() }),
+      )
     )
-      throw new Error('the signing key is not the one ccmux trusts (src/release/trust.ts)');
+      throw new Error(
+        'the signing key is not one ccmux trusts (src/release/trust.ts, CCMUX_RELEASE_SIGNING_PUBLIC_KEY)',
+      );
     assertCliPublishable(await publishedManifest(), manifest);
   }
   await Bun.write(RELEASE_MANIFEST, `${JSON.stringify(document, null, 2)}\n`);
