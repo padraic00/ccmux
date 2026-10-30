@@ -234,3 +234,33 @@ test('the next menu is answered even when no empty frame was seen between them',
     'stop',
   );
 });
+
+test('the development-channels warning is answered only with the consent check the caller supplies', () => {
+  const m = makeMachine();
+  const text = (cursor: number) =>
+    [' WARNING: Loading development channels', ' Channels: server:local']
+      .concat(
+        ['I am using this for local development', 'Exit'].map(
+          (o, i) => `${i === cursor ? '❯' : ' '} ${i + 1}. ${o}`,
+        ),
+      )
+      .join('\n')
+      .concat('\n Enter to confirm · Esc to cancel\n');
+  // No consent check, or one that declines: never pressed, whatever the machine policy says.
+  expect(settleMenu(initialMenuSettle, text(0), m).action).toEqual({ act: 'wait' });
+  expect(settleMenu(initialMenuSettle, text(0), m, () => null).action).toEqual({ act: 'wait' });
+  // Consented: the number the check names, then Enter only once the cursor is on it.
+  const seen: string[] = [];
+  const consented = (frame: string) => {
+    seen.push(frame);
+    return '1';
+  };
+  const first = settleMenu(initialMenuSettle, text(1), m, consented);
+  expect(first.action).toEqual({ act: 'press', key: '1' });
+  expect(seen.at(-1)).toContain('Channels: server:local');
+  expect(settleMenu(first.state, text(1), m, consented).action.act).toBe('stop');
+  expect(settleMenu(first.state, text(0), m, consented).action).toEqual({
+    act: 'press',
+    key: 'Enter',
+  });
+});
