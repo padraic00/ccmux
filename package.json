@@ -52,7 +52,7 @@
     "jpeg-js": "0.4.4",
     "pngjs": "7.0.0",
     "react": "^19.3.0",
-    "zod": "^4.6.5"
+    "zod": "^4.6.6"
   },
   "peerDependencies": {
     "stitchkit": ">=0.108.3 <1"
